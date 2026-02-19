@@ -666,11 +666,16 @@ function formatTokenAmount(n) {
   return n.toFixed(4);
 }
 
-app.listen(PORT, function () {
-  console.log('Mnk3ys server at http://localhost:' + PORT);
-  if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET) {
-    console.log('Discord login disabled: set DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET in .env');
-  } else {
-    console.log('Discord redirect URI for Dev Portal:', REDIRECT_URI);
-  }
-});
+// On Vercel, do not listen; the app is used by api/[[...path]].js
+if (process.env.VERCEL !== '1') {
+  app.listen(PORT, function () {
+    console.log('Mnk3ys server at http://localhost:' + PORT);
+    if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET) {
+      console.log('Discord login disabled: set DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET in .env');
+    } else {
+      console.log('Discord redirect URI for Dev Portal:', REDIRECT_URI);
+    }
+  });
+}
+
+module.exports = app;

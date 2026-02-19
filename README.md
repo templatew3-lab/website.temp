@@ -34,6 +34,20 @@ NFT + Token site with wallet connect and **Discord login**.
 
    Open `http://localhost:3000`. Use **Connect Discord** to sign in; after callback the button shows **Log out (username)**.
 
+## Deploy to Vercel
+
+1. Push the repo to GitHub (e.g. `templatew3-lab/website.temp`).
+2. In [Vercel](https://vercel.com), **Add New Project** → Import the repo.
+3. **Root Directory**: leave default (project root).
+4. **Environment Variables** (Project Settings → Environment Variables): add the same vars as in `.env`:
+   - `BASE_URL` = your Vercel URL, e.g. `https://website-temp-xxx.vercel.app` (or your custom domain). Required for Discord OAuth redirect.
+   - `SESSION_SECRET` = long random string.
+   - `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` (if using Discord login).
+   - `HELIUS_API_KEY`, `BLUNA_TOKEN_MINT`, `MNK3YS_COLLECTION_MINT`, `ZMB3YS_COLLECTION_MINT` (for collections/holders/verify).
+   - `BIRDEYE_API_KEY` (optional, for BLUNANA 15m chart).
+5. In Discord Developer Portal, add the production redirect: `https://<your-vercel-url>/api/discord/callback`.
+6. Deploy. The app runs as static files + serverless `/api/*` routes.
+
 ## Run without backend (static only)
 
 Serve the folder with any static server (e.g. `python3 -m http.server 8080`). Discord login will be disabled unless you set `discordConnectUrl` in `js/config.js` to an external OAuth URL.
