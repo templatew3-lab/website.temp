@@ -36,50 +36,45 @@ function sendFile(res, filePath, ext) {
 }
 
 module.exports = (req, res) => {
-  let u = (req.url || req.path || '').split('?')[0];
-  if (u.startsWith('http')) {
+  let raw = (req.url || req.path || '').split('?')[0];
+  if (raw.startsWith('http')) {
     try {
-      u = new URL(u).pathname;
+      raw = new URL(raw).pathname;
     } catch (_) {}
   }
   const q = (req.url || '').includes('?') ? '?' + (req.url || '').split('?').slice(1).join('?') : '';
-  if (u.startsWith('/api/')) {
-    u = u.slice(4) || '/';
-  } else if (u === '/api') {
-    u = '/';
-  }
-  if (u === '/Mnk3ys' || u === '/Mnk3ys/') {
-    u = '/';
-  } else if (u.startsWith('/Mnk3ys/')) {
-    u = u.slice(8) || '/';
-  }
-  u = u || '/';
 
-  const isRoot = u === '/' || u === '/index.html' || u === '';
-  if (isRoot) {
-    const indexPath = path.join(ROOT, 'index.html');
+  if (raw.startsWith('/api/') && raw.length > 5) {
+    req.url = raw + q;
+    return app(req, res);
+  }
+
+  let u = raw;
+  if (u.startsWith('/api/')) u = u.slice(4) || '/';
+  else if (u === '/api') u = '/';
+  if (u === '/Mnk3ys' || u === '/Mnk3ys/') u = '/';
+  else if (u.startsWith('/Mnk3ys/')) u = u.slice(8) || '/';
+  u = (u || '/').trim().replace(/\/+/g, '/').replace(/\/$/, '') || '/';
+
+  if (u === '/favicon.ico') return res.status(204).end();
+
+  const isRoot = u === '' || u === '/' || u === '/index.html';
+  const filePath = isRoot ? path.join(ROOT, 'index.html') : path.resolve(ROOT, u.replace(/^\/+/, ''));
+  if (!isRoot && !filePath.startsWith(ROOT)) return res.status(404).end();
+  const ext = path.extname(isRoot ? 'index.html' : u);
+  if (isRoot || u.startsWith('/css/') || u.startsWith('/js/') || u.startsWith('/assets/')) {
     try {
-      const html = fs.readFileSync(indexPath, 'utf8');
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      return res.status(200).send(html);
+      const body = ['.css', '.js', '.json', '.html'].includes(ext)
+        ? fs.readFileSync(filePath, 'utf8')
+        : fs.readFileSync(filePath);
+      res.setHeader('Content-Type', isRoot ? 'text/html; charset=utf-8' : (MIME[ext] || 'application/octet-stream'));
+      return res.status(200).send(body);
     } catch (e) {
-      res.setHeader('Content-Type', 'text/plain');
-      return res.status(500).send('index not found');
-    }
-  }
-  if (u === '/favicon.ico') {
-    return res.status(204).end();
-  }
-
-  if (u.startsWith('/css/') || u.startsWith('/js/') || u.startsWith('/assets/')) {
-    const ext = path.extname(u);
-    if (MIME[ext]) {
-      const filePath = path.resolve(ROOT, u.replace(/^\/+/, ''));
-      if (!filePath.startsWith(ROOT)) return res.status(404).end();
-      return sendFile(res, filePath, ext);
+      if (isRoot) return res.status(500).send('index not found');
+      return res.status(404).end();
     }
   }
 
-  req.url = (u || '/') + q;
+  req.url = raw + q;
   return app(req, res);
 };
