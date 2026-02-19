@@ -5,8 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const app = require('../server');
 
-// In Vercel serverless, cwd is usually project root; __dirname is api/
-const ROOT = process.cwd();
+const ROOT = path.resolve(path.join(__dirname, '..'));
 
 const MIME = {
   '.css': 'text/css; charset=utf-8',
@@ -36,27 +35,34 @@ function sendFile(res, filePath, ext) {
 }
 
 module.exports = (req, res) => {
-  let u = (req.url || '').split('?')[0];
+  let u = (req.url || req.path || '').split('?')[0];
+  if (u.startsWith('http')) {
+    try {
+      u = new URL(u).pathname;
+    } catch (_) {}
+  }
   const q = (req.url || '').includes('?') ? '?' + (req.url || '').split('?').slice(1).join('?') : '';
-  // Rewrite "/(.*)" → "/api/[[...path]]" so we get req.url like /api, /api/Mnk3ys/, /api/css/x, /api/api/collections
   if (u.startsWith('/api/')) {
     u = u.slice(4) || '/';
   } else if (u === '/api') {
     u = '/';
   }
-  // Support /Mnk3ys and /Mnk3ys/ so both root and /Mnk3ys/ work
   if (u === '/Mnk3ys' || u === '/Mnk3ys/') {
     u = '/';
   } else if (u.startsWith('/Mnk3ys/')) {
     u = u.slice(8) || '/';
   }
+  u = u || '/';
 
-  if (u === '/' || u === '/index.html') {
+  const isRoot = u === '/' || u === '/index.html' || u === '';
+  if (isRoot) {
+    const indexPath = path.join(ROOT, 'index.html');
     try {
-      const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+      const html = fs.readFileSync(indexPath, 'utf8');
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       return res.status(200).send(html);
     } catch (e) {
+      res.setHeader('Content-Type', 'text/plain');
       return res.status(500).send('index not found');
     }
   }
