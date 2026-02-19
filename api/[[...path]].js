@@ -1,16 +1,18 @@
 /**
- * Vercel serverless catch-all: all requests rewritten here. Restore original path for Express.
+ * Vercel serverless catch-all: requests under /Mnk3ys are rewritten here. Strip base path for Express.
  */
 const app = require('../server');
 
+const BASE = '/Mnk3ys';
+
 module.exports = (req, res) => {
-  // Rewrite "/(.*)" → "/api/[[...path]]" so we get req.url like /api, /api/css/x, /api/api/collections. Restore original path.
   let u = (req.url || '').split('?')[0];
   const q = (req.url || '').includes('?') ? '?' + (req.url || '').split('?').slice(1).join('?') : '';
-  if (u.startsWith('/api/')) {
-    u = u.slice(4) || '/';  // /api/ → /, /api/css/x → /css/x, /api/api/collections → /api/collections
-  } else if (u === '/api') {
+  // Vercel rewrites /Mnk3ys and /Mnk3ys/xxx → this function; req.url may be /Mnk3ys, /Mnk3ys/, /Mnk3ys/api/...
+  if (u === BASE || u === BASE + '/') {
     u = '/';
+  } else if (u.startsWith(BASE + '/')) {
+    u = u.slice(BASE.length) || '/';
   }
   req.url = (u || '/') + q;
   return app(req, res);

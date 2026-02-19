@@ -1,6 +1,10 @@
 {
   "version": 2,
+  "redirects": [
+    { "source": "/", "destination": "/Mnk3ys/", "permanent": false }
+  ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/api/[[...path]]" }
+    { "source": "/Mnk3ys", "destination": "/api/[[...path]]" },
+    { "source": "/Mnk3ys/(.*)", "destination": "/api/[[...path]]" }
   ]
 }
