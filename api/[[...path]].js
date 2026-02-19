@@ -44,7 +44,7 @@ module.exports = (req, res) => {
   }
   const q = (req.url || '').includes('?') ? '?' + (req.url || '').split('?').slice(1).join('?') : '';
 
-  if (raw.startsWith('/api/') && raw.length > 5) {
+  if (raw.startsWith('/api/') && raw.length > 5 && !raw.startsWith('/api/Mnk3ys')) {
     req.url = raw + q;
     return app(req, res);
   }
