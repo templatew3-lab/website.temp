@@ -1,14 +1,17 @@
 /**
- * Vercel serverless catch-all: forwards /api/* to Express. If a rewrite sent / here, serve index.
+ * Vercel serverless catch-all: all requests rewritten here. Restore original path for Express.
  */
-const path = require('path');
 const app = require('../server');
 
 module.exports = (req, res) => {
-  const u = (req.url || '').split('?')[0];
-  // When Express preset rewrites GET / to this function, req.url can be / or /api — serve index.html
-  if (u === '/' || u === '' || u === '/api') {
-    req.url = '/';
+  // Rewrite "/(.*)" → "/api/[[...path]]" so we get req.url like /api, /api/css/x, /api/api/collections. Restore original path.
+  let u = (req.url || '').split('?')[0];
+  const q = (req.url || '').includes('?') ? '?' + (req.url || '').split('?').slice(1).join('?') : '';
+  if (u.startsWith('/api/')) {
+    u = u.slice(4) || '/';  // /api/ → /, /api/css/x → /css/x, /api/api/collections → /api/collections
+  } else if (u === '/api') {
+    u = '/';
   }
+  req.url = (u || '/') + q;
   return app(req, res);
 };
