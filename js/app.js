@@ -106,15 +106,16 @@
     var provider = getSolanaProvider();
     if (!provider) {
       alert('No Solana wallet extension detected. Install or enable Phantom, Solflare, or another Solana wallet in this browser.');
-      return;
+      return Promise.reject(new Error('No provider'));
     }
-    provider.connect({ onlyIfTrusted: false })
+    return provider.connect({ onlyIfTrusted: false })
       .then(function () {
         setWalletConnected(true);
         hideHoldings();
       })
       .catch(function (err) {
         if (err.code !== 4001) console.warn('Wallet connect error', err);
+        throw err;
       });
   }
 
@@ -164,11 +165,11 @@
   }
 
   function setVerifyLoading(loading) {
-    var btns = document.querySelectorAll('#btn-verify, #btn-verify-panel');
+    var btns = document.querySelectorAll('#btn-verify, #btn-verify-panel, #hero-verify-cta');
     btns.forEach(function (btn) {
       if (!btn) return;
       btn.disabled = loading;
-      btn.textContent = loading ? 'Checking…' : 'Verify';
+      btn.textContent = loading ? 'Checking…' : 'Verify holdings';
     });
   }
 
@@ -196,39 +197,56 @@
       });
   }
 
-  function onVerify() {
+  function isDiscordConnected() {
+    return document.body.classList.contains('discord-connected');
+  }
+
+  function doVerify() {
     var wallet = getWalletPublicKey();
-    if (!wallet) {
-      alert('Connect your wallet first, then click Verify to check your NFT and token holdings.');
-      return;
-    }
-
+    if (!wallet) return;
     setVerifyLoading(true);
-
     function done(data) {
       setVerifyLoading(false);
       showHoldings(data || {});
     }
-
     function fail(err) {
       setVerifyLoading(false);
       console.warn('Verify failed', err);
       showHoldings({});
       alert('Could not load holdings. Check console or try again.');
     }
-
     fetchVerifyHoldings(wallet).then(done).catch(fail);
   }
 
-  document.getElementById('btn-verify')?.addEventListener('click', onVerify);
+  function runVerifyFlow() {
+    if (!isDiscordConnected()) {
+      if (confirm('Step 1: Connect Discord first. Go to Discord now?')) {
+        window.location.href = (CONFIG.discordConnectUrl && (CONFIG.discordConnectUrl.startsWith('http://') || CONFIG.discordConnectUrl.startsWith('https://')))
+          ? CONFIG.discordConnectUrl
+          : window.location.origin + '/api/discord/auth';
+      }
+      return;
+    }
+    if (!getWalletPublicKey()) {
+      if (confirm('Step 2: Connect your wallet to verify your NFT and token holdings.')) {
+        connectWallet()
+          .then(function () { doVerify(); })
+          .catch(function () {});
+      }
+      return;
+    }
+    doVerify();
+  }
+
+  document.getElementById('btn-verify')?.addEventListener('click', runVerifyFlow);
   document.getElementById('btn-verify-mobile')?.addEventListener('click', function () {
     openMobilePanel();
-    onVerify();
+    runVerifyFlow();
   });
-  document.getElementById('btn-verify-panel')?.addEventListener('click', onVerify);
+  document.getElementById('btn-verify-panel')?.addEventListener('click', runVerifyFlow);
   document.getElementById('hero-verify-cta')?.addEventListener('click', function () {
     if (window.innerWidth < 900) openMobilePanel();
-    onVerify();
+    runVerifyFlow();
   });
 
   // ----- Discord login -----
