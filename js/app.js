@@ -100,6 +100,7 @@
     document.querySelectorAll('#btn-connect-wallet, #btn-connect-wallet-mobile').forEach(function (btn) {
       if (btn) btn.textContent = label;
     });
+    if (typeof syncVerifyModalState === 'function') syncVerifyModalState();
   }
 
   function connectWallet() {
@@ -165,7 +166,7 @@
   }
 
   function setVerifyLoading(loading) {
-    var btns = document.querySelectorAll('#btn-verify, #btn-verify-panel, #hero-verify-cta');
+    var btns = document.querySelectorAll('#btn-verify, #btn-verify-panel, #hero-verify-cta, #verify-modal-btn-verify');
     btns.forEach(function (btn) {
       if (!btn) return;
       btn.disabled = loading;
@@ -201,13 +202,14 @@
     return document.body.classList.contains('discord-connected');
   }
 
-  function doVerify() {
+  function doVerify(onSuccess) {
     var wallet = getWalletPublicKey();
     if (!wallet) return;
     setVerifyLoading(true);
     function done(data) {
       setVerifyLoading(false);
       showHoldings(data || {});
+      if (typeof onSuccess === 'function') onSuccess();
     }
     function fail(err) {
       setVerifyLoading(false);
@@ -218,36 +220,129 @@
     fetchVerifyHoldings(wallet).then(done).catch(fail);
   }
 
-  function runVerifyFlow() {
-    if (!isDiscordConnected()) {
-      if (confirm('Step 1: Connect Discord first. Go to Discord now?')) {
-        window.location.href = (CONFIG.discordConnectUrl && (CONFIG.discordConnectUrl.startsWith('http://') || CONFIG.discordConnectUrl.startsWith('https://')))
-          ? CONFIG.discordConnectUrl
-          : window.location.origin + '/api/discord/auth';
-      }
-      return;
-    }
-    if (!getWalletPublicKey()) {
-      if (confirm('Step 2: Connect your wallet to verify your NFT and token holdings.')) {
-        connectWallet()
-          .then(function () { doVerify(); })
-          .catch(function () {});
-      }
-      return;
-    }
-    doVerify();
+  // ----- Verify modal (3 steps) -----
+  var verifyModal = document.getElementById('verify-modal');
+  var verifyModalBackdrop = document.getElementById('verify-modal-backdrop');
+  var verifyModalClose = document.getElementById('verify-modal-close');
+  var verifyModalBtnDiscord = document.getElementById('verify-modal-btn-discord');
+  var verifyModalDiscordConnected = document.getElementById('verify-modal-discord-connected');
+  var verifyModalDiscordAvatar = document.getElementById('verify-modal-discord-avatar');
+  var verifyModalDiscordUsername = document.getElementById('verify-modal-discord-username');
+  var verifyModalBtnWallet = document.getElementById('verify-modal-btn-wallet');
+  var verifyModalWalletConnected = document.getElementById('verify-modal-wallet-connected');
+  var verifyModalWalletAddress = document.getElementById('verify-modal-wallet-address');
+  var verifyModalBtnVerify = document.getElementById('verify-modal-btn-verify');
+  var verifyModalSuccess = document.getElementById('verify-modal-success');
+  var heroVerifyActions = document.getElementById('hero-verify-actions');
+  var hasVerifiedThisSession = false;
+
+  function openVerifyModal() {
+    if (!verifyModal) return;
+    if (window.innerWidth < BREAKPOINT) openMobilePanel();
+    verifyModal.setAttribute('aria-hidden', 'false');
+    syncVerifyModalState();
   }
 
-  document.getElementById('btn-verify')?.addEventListener('click', runVerifyFlow);
+  function closeVerifyModal() {
+    if (verifyModal) verifyModal.setAttribute('aria-hidden', 'true');
+  }
+
+  function getDiscordAvatarUrl(user) {
+    if (!user || !user.id) return '';
+    if (user.avatar) {
+      var ext = user.avatar.startsWith('a_') ? 'gif' : 'png';
+      return 'https://cdn.discordapp.com/avatars/' + user.id + '/' + user.avatar + '.' + ext;
+    }
+    return 'https://cdn.discordapp.com/embed/avatars/' + (parseInt(user.discriminator, 10) % 5) + '.png';
+  }
+
+  function syncVerifyModalState() {
+    var discordOk = isDiscordConnected();
+    var walletOk = !!getWalletPublicKey();
+
+    if (verifyModalBtnDiscord) {
+      verifyModalBtnDiscord.hidden = !!discordOk;
+      verifyModalBtnDiscord.disabled = false;
+    }
+    if (verifyModalDiscordConnected) {
+      verifyModalDiscordConnected.hidden = !discordOk;
+      if (discordOk && discordUser) {
+        if (verifyModalDiscordAvatar) {
+          verifyModalDiscordAvatar.src = getDiscordAvatarUrl(discordUser);
+          verifyModalDiscordAvatar.alt = (discordUser.global_name || discordUser.username) || 'Discord';
+        }
+        if (verifyModalDiscordUsername) {
+          verifyModalDiscordUsername.textContent = discordUser.global_name || discordUser.username || 'Connected';
+        }
+      }
+    }
+
+    if (verifyModalBtnWallet) {
+      verifyModalBtnWallet.disabled = !discordOk;
+      verifyModalBtnWallet.hidden = !!walletOk;
+    }
+    if (verifyModalWalletConnected) {
+      verifyModalWalletConnected.hidden = !walletOk;
+      if (walletOk && verifyModalWalletAddress) {
+        var addr = getWalletPublicKey();
+        verifyModalWalletAddress.textContent = addr ? (addr.slice(0, 4) + '…' + addr.slice(-4)) : '';
+      }
+    }
+
+    if (verifyModalBtnVerify) {
+      verifyModalBtnVerify.disabled = !discordOk || !walletOk;
+      verifyModalBtnVerify.hidden = hasVerifiedThisSession;
+    }
+    if (verifyModalSuccess) {
+      verifyModalSuccess.hidden = !hasVerifiedThisSession;
+    }
+    if (heroVerifyActions) {
+      heroVerifyActions.classList.toggle('hero-home__actions--verified', hasVerifiedThisSession);
+    }
+  }
+
+  function setVerifySuccessInModal() {
+    hasVerifiedThisSession = true;
+    if (heroVerifyActions) heroVerifyActions.classList.add('hero-home__actions--verified');
+    if (verifyModalBtnVerify) verifyModalBtnVerify.hidden = true;
+    if (verifyModalSuccess) verifyModalSuccess.hidden = false;
+  }
+
+  document.getElementById('btn-verify')?.addEventListener('click', openVerifyModal);
   document.getElementById('btn-verify-mobile')?.addEventListener('click', function () {
     openMobilePanel();
-    runVerifyFlow();
+    openVerifyModal();
   });
-  document.getElementById('btn-verify-panel')?.addEventListener('click', runVerifyFlow);
+  document.getElementById('btn-verify-panel')?.addEventListener('click', openVerifyModal);
   document.getElementById('hero-verify-cta')?.addEventListener('click', function () {
     if (window.innerWidth < 900) openMobilePanel();
-    runVerifyFlow();
+    openVerifyModal();
   });
+
+  if (verifyModalBackdrop) verifyModalBackdrop.addEventListener('click', closeVerifyModal);
+  if (verifyModalClose) verifyModalClose.addEventListener('click', closeVerifyModal);
+
+  if (verifyModalBtnDiscord) {
+    verifyModalBtnDiscord.addEventListener('click', function () {
+      window.location.href = getDiscordAuthUrl();
+    });
+  }
+
+  if (verifyModalBtnWallet) {
+    verifyModalBtnWallet.addEventListener('click', function () {
+      if (verifyModalBtnWallet.disabled) return;
+      connectWallet().then(syncVerifyModalState).catch(function () {});
+    });
+  }
+
+  if (verifyModalBtnVerify) {
+    verifyModalBtnVerify.addEventListener('click', function () {
+      if (verifyModalBtnVerify.disabled) return;
+      doVerify(function () {
+        setVerifySuccessInModal();
+      });
+    });
+  }
 
   // ----- Discord login -----
   var discordUser = null;
@@ -259,16 +354,22 @@
     return window.location.origin + '/api/discord/auth';
   }
 
-  function setDiscordUI(connected, username) {
+  function setDiscordUI(connected, userOrUsername) {
     document.body.classList.toggle('discord-connected', !!connected);
-    discordUser = connected ? (username || null) : null;
-    var label = connected ? 'Log out' + (username ? ' (' + username + ')' : '') : 'Connect Discord';
+    if (connected && userOrUsername != null) {
+      discordUser = typeof userOrUsername === 'object' ? userOrUsername : { global_name: userOrUsername, username: userOrUsername };
+    } else {
+      discordUser = null;
+    }
+    var name = discordUser && (discordUser.global_name || discordUser.username);
+    var label = connected ? 'Log out' + (name ? ' (' + name + ')' : '') : 'Connect Discord';
     document.querySelectorAll('#btn-connect-discord, #btn-connect-discord-mobile').forEach(function (btn) {
       if (!btn) return;
       btn.textContent = label;
       btn.title = connected ? 'Disconnect Discord' : 'Sign in with Discord';
       btn.dataset.discordConnected = connected ? '1' : '0';
     });
+    syncVerifyModalState();
   }
 
   function fetchDiscordMe() {
@@ -279,7 +380,7 @@
       })
       .then(function (data) {
         if (data && data.connected && data.user) {
-          setDiscordUI(true, data.user.global_name || data.user.username);
+          setDiscordUI(true, data.user);
           return data.user;
         }
         setDiscordUI(false);

@@ -143,6 +143,45 @@
     </div>
   </div>
 
+  <!-- Verify holdings: 3-step modal -->
+  <div class="verify-modal" id="verify-modal" aria-hidden="true" role="dialog" aria-labelledby="verify-modal-title" aria-modal="true">
+    <div class="verify-modal__backdrop" id="verify-modal-backdrop"></div>
+    <div class="verify-modal__box">
+      <div class="verify-modal__head">
+        <h2 class="verify-modal__title" id="verify-modal-title">Verify holdings</h2>
+        <button type="button" class="verify-modal__close" id="verify-modal-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="verify-modal__body">
+        <div class="verify-modal__step">
+          <p class="verify-modal__step-label">1. Connect Discord</p>
+          <div class="verify-modal__discord" id="verify-modal-discord">
+            <button type="button" class="btn btn--outline btn--full" id="verify-modal-btn-discord">Connect Discord</button>
+            <div class="verify-modal__discord-connected" id="verify-modal-discord-connected" hidden>
+              <img class="verify-modal__avatar" id="verify-modal-discord-avatar" src="" alt="" width="40" height="40" />
+              <span class="verify-modal__username" id="verify-modal-discord-username"></span>
+            </div>
+          </div>
+        </div>
+        <div class="verify-modal__step">
+          <p class="verify-modal__step-label">2. Connect wallet</p>
+          <div class="verify-modal__wallet" id="verify-modal-wallet">
+            <button type="button" class="btn btn--outline btn--full" id="verify-modal-btn-wallet" disabled>Connect wallet</button>
+            <div class="verify-modal__wallet-connected" id="verify-modal-wallet-connected" hidden>
+              <span class="verify-modal__address" id="verify-modal-wallet-address"></span>
+            </div>
+          </div>
+        </div>
+        <div class="verify-modal__step">
+          <p class="verify-modal__step-label">3. Verify</p>
+          <button type="button" class="btn btn--primary btn--full" id="verify-modal-btn-verify" disabled>Verify holdings</button>
+          <div class="verify-modal__success" id="verify-modal-success" hidden>
+            <p class="verify-modal__success-msg">Holdings verified!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <main class="main" id="main">
     <div class="main__spacer main__spacer--side" aria-hidden="true"></div>
 
@@ -152,7 +191,7 @@
         <h1 class="hero-home__title">MNK3YLABS</h1>
         <p class="hero-home__tagline">STRONGER TOGETHER</p>
         <p class="hero-home__sub">Make NFTs Ape Again. NFT collections & project token on Solana.</p>
-        <div class="hero-home__actions">
+        <div class="hero-home__actions" id="hero-verify-actions">
           <button type="button" class="btn btn--hero-verify" id="hero-verify-cta">Verify holdings</button>
         </div>
       </div>
