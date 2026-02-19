@@ -27,6 +27,7 @@ window.MNK3YS_CONFIG = {
 
   // Team: one object per member. Discord ID is used to fetch username and avatar. X profile URL is used for link and handle.
   team: [
-    // { xProfileUrl: 'https://x.com/username', discordId: '123456789012345678', description: 'Role or short bio' },
+    { xProfileUrl: 'https://x.com/deano_sol', discordId: '890995564949434468', description: 'Founder & artist' },
+    { xProfileUrl: 'https://x.com/GrandFracton', discordId: '978993938318897203', description: 'Community manager' },
   ],
 };
