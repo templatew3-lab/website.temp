@@ -705,7 +705,7 @@
         var handleDisplay = xHandleFromUrl(xUrl);
         card.innerHTML =
           '<div class="card__avatar-wrap">' +
-            '<img class="card__avatar card__avatar--img" src="' + escapeHtml(avatarSrc) + '" alt="" width="64" height="64" loading="lazy" />' +
+            '<img class="card__avatar card__avatar--img" src="' + escapeHtml(avatarSrc) + '" alt="" loading="lazy" />' +
           '</div>' +
           '<h3 class="card__title">' + escapeHtml(title) + '</h3>' +
           (handleDisplay ? '<p class="card__meta card__meta--handle"><a class="link link--external" href="' + escapeHtml(xUrl) + '" target="_blank" rel="noopener">' + escapeHtml(handleDisplay) + '</a></p>' : '') +
