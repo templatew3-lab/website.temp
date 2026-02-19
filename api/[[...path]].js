@@ -41,6 +41,15 @@ module.exports = (req, res) => {
       raw = new URL(raw).pathname;
     } catch (_) {}
   }
+  if (!raw.startsWith('/')) raw = '/' + raw;
+  const pathSegments = req.query && req.query.path;
+  if (pathSegments && !/^\/api\//.test(raw)) {
+    const rest = Array.isArray(pathSegments) ? pathSegments.join('/') : String(pathSegments);
+    raw = '/api/' + (rest ? rest.replace(/^\/+/, '') : '');
+  }
+  if (/^\/(discord|verify|collections|holders|prices|blunana-ohlc)(\/|$|\?)/.test(raw)) {
+    raw = '/api' + raw;
+  }
   const q = (req.url || '').includes('?') ? '?' + (req.url || '').split('?').slice(1).join('?') : '';
 
   const isApiRoute = /^\/api\/(discord|verify|collections|holders|prices|blunana-ohlc)(\/|$|\?)/.test(raw);
