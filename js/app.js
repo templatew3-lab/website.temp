@@ -135,35 +135,38 @@
   var walletPickerList = document.getElementById('wallet-picker-list');
 
   function openWalletPicker() {
-    if (!walletPicker || !walletPickerList) return;
-    var wallets = getDetectedWallets();
-    if (!wallets.length) {
-      alert('No Solana wallet extension detected. Install or enable Phantom, Solflare, or another Solana wallet in this browser.');
-      return Promise.reject(new Error('No provider'));
-    }
-    if (wallets.length === 1) {
-      return connectWithProvider(wallets[0].provider);
-    }
-    walletPickerList.innerHTML = '';
-    wallets.forEach(function (w) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'wallet-picker__btn';
-      btn.textContent = w.name;
-      btn.addEventListener('click', function () {
-        closeWalletPicker();
-        connectWithProvider(w.provider)
-          .then(function () {
-            if (walletPicker._resolve) walletPicker._resolve();
-            walletPicker._resolve = null;
-          })
-          .catch(function () {});
-      });
-      walletPickerList.appendChild(btn);
-    });
-    walletPicker.setAttribute('aria-hidden', 'false');
-    return new Promise(function (resolve) {
-      walletPicker._resolve = resolve;
+    if (!walletPicker || !walletPickerList) return Promise.reject();
+    return new Promise(function (resolve, reject) {
+      function showList(wallets) {
+        if (!wallets.length) {
+          alert('No Solana wallet extension detected. Install or enable Phantom, Solflare, or another Solana wallet in this browser.');
+          reject(new Error('No provider'));
+          return;
+        }
+        walletPickerList.innerHTML = '';
+        wallets.forEach(function (w) {
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'wallet-picker__btn';
+          btn.textContent = w.name;
+          btn.addEventListener('click', function () {
+            closeWalletPicker();
+            connectWithProvider(w.provider)
+              .then(function () {
+                if (walletPicker._resolve) walletPicker._resolve();
+                walletPicker._resolve = null;
+              })
+              .catch(function () {});
+          });
+          walletPickerList.appendChild(btn);
+        });
+        walletPicker.setAttribute('aria-hidden', 'false');
+        walletPicker._resolve = resolve;
+      }
+      setTimeout(function () {
+        var wallets = getDetectedWallets();
+        showList(wallets);
+      }, 120);
     });
   }
 

@@ -419,6 +419,11 @@ body {
   color: var(--text);
   background: var(--bg-hover);
 }
+#btn-connect-discord[hidden],
+#btn-connect-discord-mobile[hidden],
+#verify-modal-btn-discord[hidden] {
+  display: none !important;
+}
 
 .dashboard--bottom {
   display: flex;
