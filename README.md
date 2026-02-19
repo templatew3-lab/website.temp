@@ -38,15 +38,16 @@ NFT + Token site with wallet connect and **Discord login**.
 
 1. Push the repo to GitHub (e.g. `templatew3-lab/website.temp`).
 2. In [Vercel](https://vercel.com), **Add New Project** → Import the repo.
-3. **Root Directory**: leave default (project root).
-4. **Environment Variables** (Project Settings → Environment Variables): add the same vars as in `.env`:
+3. **Framework Preset**: set to **Other** (so Vercel serves static files from root; do not use Express).
+4. **Root Directory**: leave default (project root).
+5. **Environment Variables** (Project Settings → Environment Variables): add the same vars as in `.env`:
    - `BASE_URL` = your Vercel URL, e.g. `https://website-temp-xxx.vercel.app` (or your custom domain). Required for Discord OAuth redirect.
    - `SESSION_SECRET` = long random string.
    - `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` (if using Discord login).
    - `HELIUS_API_KEY`, `BLUNA_TOKEN_MINT`, `MNK3YS_COLLECTION_MINT`, `ZMB3YS_COLLECTION_MINT` (for collections/holders/verify).
    - `BIRDEYE_API_KEY` (optional, for BLUNANA 15m chart).
-5. In Discord Developer Portal, add the production redirect: `https://<your-vercel-url>/api/discord/callback`.
-6. Deploy. The app runs as static files + serverless `/api/*` routes.
+6. In Discord Developer Portal, add the production redirect: `https://<your-vercel-url>/api/discord/callback`.
+7. Deploy. The app runs at **/** (static from root + serverless `/api/*`). `/Mnk3ys` and `/Mnk3ys/` redirect to `/`.
 
 ## Run without backend (static only)
 
