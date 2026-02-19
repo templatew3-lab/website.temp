@@ -5,8 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const app = require('../server');
 
-const staticDir = path.join(__dirname, 'static');
-const ROOT = fs.existsSync(staticDir) ? path.resolve(staticDir) : path.resolve(path.join(__dirname, '..'));
+const ROOT = path.resolve(path.join(__dirname, '..'));
 
 const MIME = {
   '.css': 'text/css; charset=utf-8',
