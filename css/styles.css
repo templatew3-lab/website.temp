@@ -1346,6 +1346,26 @@ body {
   display: block;
 }
 
+/* Team section: tiled Blunana token image as background */
+#team {
+  position: relative;
+}
+#team::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('https://ipfs.io/ipfs/QmTKRAZEcTfDeVDt8hebrCv27DctYghtdfXRMc9FRA6NU3');
+  background-repeat: repeat;
+  background-size: 48px 48px;
+  opacity: 0.2;
+  pointer-events: none;
+  z-index: 0;
+}
+#team .container {
+  position: relative;
+  z-index: 1;
+}
+
 /* Team cards: square image, centered in card with padding above */
 .card--team .card__avatar-wrap {
   width: 100%;
