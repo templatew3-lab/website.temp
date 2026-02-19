@@ -10,7 +10,7 @@
 
   const BREAKPOINT = 900;
   const CONFIG = window.MNK3YS_CONFIG || { holderPortalUrl: '', endpoints: {}, discordConnectUrl: '' };
-  const BASE_PATH = (typeof window !== 'undefined' && window.location.pathname.indexOf('/Mnk3ys') === 0) ? '/Mnk3ys' : '';
+  const BASE_PATH = '';
   const PORTAL_URL = (CONFIG.holderPortalUrl || '').replace(/\/$/, '');
   const HOLDINGS_ENDPOINT = PORTAL_URL && CONFIG.endpoints?.holdings ? PORTAL_URL + CONFIG.endpoints.holdings : '';
 
@@ -173,7 +173,7 @@
   }
 
   function fetchVerifyHoldings(walletAddress) {
-    var url = window.location.origin + BASE_PATH + '/api/verify?wallet=' + encodeURIComponent(walletAddress);
+    var url = window.location.origin + '/api/verify?wallet=' + encodeURIComponent(walletAddress);
     return fetch(url, { credentials: 'include' })
       .then(function (res) { return res.ok ? res.json() : null; })
       .then(function (data) {
@@ -238,7 +238,7 @@
     if (CONFIG.discordConnectUrl && (CONFIG.discordConnectUrl.startsWith('http://') || CONFIG.discordConnectUrl.startsWith('https://'))) {
       return CONFIG.discordConnectUrl;
     }
-    return window.location.origin + BASE_PATH + '/api/discord/auth';
+    return window.location.origin + '/api/discord/auth';
   }
 
   function setDiscordUI(connected, username) {
@@ -254,7 +254,7 @@
   }
 
   function fetchDiscordMe() {
-    return fetch(window.location.origin + BASE_PATH + '/api/discord/me', { credentials: 'include' })
+    return fetch(window.location.origin + '/api/discord/me', { credentials: 'include' })
       .then(function (res) {
         if (!res.ok) return null;
         return res.json();
@@ -282,7 +282,7 @@
   }
 
   function logoutDiscord() {
-    fetch(window.location.origin + BASE_PATH + '/api/discord/logout', {
+    fetch(window.location.origin + '/api/discord/logout', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -347,7 +347,7 @@
   // ----- Collections embeds (from /api/collections) -----
   var grid = document.getElementById('collections-grid');
   if (grid) {
-    fetch(window.location.origin + BASE_PATH + '/api/collections', { credentials: 'include' })
+    fetch(window.location.origin + '/api/collections', { credentials: 'include' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (data) {
         if (!data || !data.collections || !data.collections.length) return;
@@ -435,9 +435,9 @@
       if (table) table.className = 'holders-table holders-table--sort-' + sort;
       holdersTbody.innerHTML = '<tr><td colspan="7" class="holders-loading">Loading…</td></tr>';
       Promise.all([
-        fetch(window.location.origin + BASE_PATH + '/api/holders?sort=' + encodeURIComponent(sort), { credentials: 'include' }).then(function (r) { return r.ok ? r.json() : null; }),
-        fetch(window.location.origin + BASE_PATH + '/api/prices', { credentials: 'include' }).then(function (r) { return r.ok ? r.json() : null; }),
-        fetch(window.location.origin + BASE_PATH + '/api/collections', { credentials: 'include' }).then(function (r) { return r.ok ? r.json() : null; }),
+        fetch(window.location.origin + '/api/holders?sort=' + encodeURIComponent(sort), { credentials: 'include' }).then(function (r) { return r.ok ? r.json() : null; }),
+        fetch(window.location.origin + '/api/prices', { credentials: 'include' }).then(function (r) { return r.ok ? r.json() : null; }),
+        fetch(window.location.origin + '/api/collections', { credentials: 'include' }).then(function (r) { return r.ok ? r.json() : null; }),
       ]).then(function (arr) {
         var data = arr[0];
         var prices = arr[1] || {};
@@ -530,7 +530,7 @@
   }
 
   if (priceUsdEl || priceSolEl) {
-    fetch(window.location.origin + BASE_PATH + '/api/prices', { credentials: 'include' })
+    fetch(window.location.origin + '/api/prices', { credentials: 'include' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (p) {
         if (!p) return;
@@ -549,7 +549,7 @@
   }
 
   if (chartEl) {
-    fetch(window.location.origin + BASE_PATH + '/api/blunana-ohlc?type=15m', { credentials: 'include' })
+    fetch(window.location.origin + '/api/blunana-ohlc?type=15m', { credentials: 'include' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (data) {
         var items = (data && data.data && data.data.items) ? data.data.items : [];
