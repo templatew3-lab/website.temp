@@ -38,11 +38,17 @@ function sendFile(res, filePath, ext) {
 module.exports = (req, res) => {
   let u = (req.url || '').split('?')[0];
   const q = (req.url || '').includes('?') ? '?' + (req.url || '').split('?').slice(1).join('?') : '';
-  // Rewrite "/(.*)" → "/api/[[...path]]" so we get req.url like /api, /api/css/x, /api/api/collections
+  // Rewrite "/(.*)" → "/api/[[...path]]" so we get req.url like /api, /api/Mnk3ys/, /api/css/x, /api/api/collections
   if (u.startsWith('/api/')) {
     u = u.slice(4) || '/';
   } else if (u === '/api') {
     u = '/';
+  }
+  // Support /Mnk3ys and /Mnk3ys/ so both root and /Mnk3ys/ work
+  if (u === '/Mnk3ys' || u === '/Mnk3ys/') {
+    u = '/';
+  } else if (u.startsWith('/Mnk3ys/')) {
+    u = u.slice(8) || '/';
   }
 
   if (u === '/' || u === '/index.html') {
