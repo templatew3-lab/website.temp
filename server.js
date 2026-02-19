@@ -166,10 +166,13 @@ app.get('/api/discord/logout', function (req, res) {
 
 // ——— Discord user by ID (for team section; requires bot token) ———
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+if (!DISCORD_BOT_TOKEN) {
+  console.warn('DISCORD_BOT_TOKEN not set — Team section will show placeholder avatars. Add a Bot token from Discord Developer Portal to fetch Discord usernames and avatars.');
+}
 app.get('/api/discord/user/:id', async function (req, res) {
   const id = req.params.id;
   if (!id || !DISCORD_BOT_TOKEN) {
-    return res.status(404).json({ error: 'Not found' });
+    return res.status(503).json({ error: 'Discord bot not configured' });
   }
   try {
     const userRes = await axios.get('https://discord.com/api/v10/users/' + encodeURIComponent(id), {
