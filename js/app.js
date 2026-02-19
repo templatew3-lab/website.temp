@@ -1,0 +1,591 @@
+/**
+ * Mnk3ys — Dashboard integrated with holder portal
+ * - Wallet connect (Solana: Phantom, Solflare, etc.)
+ * - Verify: fetch NFT + token holdings from holder portal (or mock)
+ * - Discord connect placeholder / portal link
+ */
+
+(function () {
+  'use strict';
+
+  const BREAKPOINT = 900;
+  const CONFIG = window.MNK3YS_CONFIG || { holderPortalUrl: '', endpoints: {}, discordConnectUrl: '' };
+  const PORTAL_URL = (CONFIG.holderPortalUrl || '').replace(/\/$/, '');
+  const HOLDINGS_ENDPOINT = PORTAL_URL && CONFIG.endpoints?.holdings ? PORTAL_URL + CONFIG.endpoints.holdings : '';
+
+  // ----- Section highlighting -----
+  const navLinks = document.querySelectorAll('[data-section]');
+  const sections = document.querySelectorAll('.section');
+
+  function setActiveSection(sectionId) {
+    navLinks.forEach(function (link) {
+      const id = link.getAttribute('data-section');
+      link.classList.toggle('dashboard__link--active', id === sectionId);
+      link.classList.toggle('dashboard-bottom__item--active', id === sectionId);
+    });
+  }
+
+  function getSectionIdFromHash() {
+    const hash = window.location.hash.slice(1);
+    return hash || 'home';
+  }
+
+  function scrollToSection(id) {
+    const el = document.getElementById(id);
+    if (el) {
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top: top - 20, behavior: 'smooth' });
+    }
+  }
+
+  navLinks.forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      const sectionId = link.getAttribute('data-section');
+      if (sectionId && link.getAttribute('href')?.startsWith('#')) {
+        e.preventDefault();
+        window.history.replaceState(null, '', '#' + sectionId);
+        setActiveSection(sectionId);
+        scrollToSection(sectionId);
+      }
+    });
+  });
+
+  window.addEventListener('hashchange', function () {
+    setActiveSection(getSectionIdFromHash());
+  });
+
+  const observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        const id = entry.target.id;
+        if (id) {
+          setActiveSection(id);
+          if (window.location.hash !== '#' + id) {
+            window.history.replaceState(null, '', '#' + id);
+          }
+        }
+      });
+    },
+    { rootMargin: '-20% 0px -60% 0px', threshold: 0 }
+  );
+  sections.forEach(function (section) {
+    if (section.id) observer.observe(section);
+  });
+  setActiveSection(getSectionIdFromHash());
+
+  // ----- Wallet (Solana) -----
+  function getSolanaProvider() {
+    // Prefer explicit providers
+    if (window.phantom?.solana?.isPhantom) return window.phantom.solana;
+    if (window.solflare?.isSolflare) return window.solflare;
+    // Fallback to generic window.solana
+    if (window.solana?.isPhantom || window.solana?.isSolflare) return window.solana;
+    return window.solana || window.phantom?.solana || window.solflare || null;
+  }
+
+  function getWalletPublicKey() {
+    var provider = getSolanaProvider();
+    return provider && provider.publicKey ? provider.publicKey.toString() : null;
+  }
+
+  function isWalletConnected() {
+    return !!getWalletPublicKey();
+  }
+
+  function setWalletConnected(connected) {
+    document.body.classList.toggle('wallet-connected', connected);
+    var label = connected ? 'Connected' : 'Connect wallet';
+    document.querySelectorAll('#btn-connect-wallet, #btn-connect-wallet-mobile').forEach(function (btn) {
+      if (btn) btn.textContent = label;
+    });
+  }
+
+  function connectWallet() {
+    var provider = getSolanaProvider();
+    if (!provider) {
+      alert('No Solana wallet extension detected. Install or enable Phantom, Solflare, or another Solana wallet in this browser.');
+      return;
+    }
+    provider.connect({ onlyIfTrusted: false })
+      .then(function () {
+        setWalletConnected(true);
+        hideHoldings();
+      })
+      .catch(function (err) {
+        if (err.code !== 4001) console.warn('Wallet connect error', err);
+      });
+  }
+
+  (function initWalletListener() {
+    var provider = getSolanaProvider();
+    if (!provider || typeof provider.on !== 'function') return;
+    provider.on('accountChanged', function (pk) {
+      if (pk) setWalletConnected(true);
+      else setWalletConnected(false);
+      hideHoldings();
+    });
+    if (getWalletPublicKey()) setWalletConnected(true);
+  })();
+
+  document.getElementById('btn-connect-wallet')?.addEventListener('click', connectWallet);
+  document.getElementById('btn-connect-wallet-mobile')?.addEventListener('click', connectWallet);
+
+  // ----- Holdings UI -----
+  const holdingsPanels = document.querySelectorAll('.holdings');
+
+  function showHoldings(data) {
+    var blunana = data && data.blunanaFormatted != null ? data.blunanaFormatted : (data && data.blunana != null ? String(data.blunana) : '—');
+    var mnk3ys = data && data.mnk3ysCount != null ? String(data.mnk3ysCount) : '—';
+    var zmb3ys = data && data.zmb3ysCount != null ? String(data.zmb3ysCount) : '—';
+    var totalNfts = data && data.totalNfts != null ? String(data.totalNfts) : '—';
+    [
+      [document.getElementById('holdings-blunana'), document.getElementById('holdings-blunana-mobile')],
+      [document.getElementById('holdings-mnk3ys'), document.getElementById('holdings-mnk3ys-mobile')],
+      [document.getElementById('holdings-zmb3ys'), document.getElementById('holdings-zmb3ys-mobile')],
+      [document.getElementById('holdings-total-nfts'), document.getElementById('holdings-total-nfts-mobile')],
+    ].forEach(function (pair, i) {
+      var val = [blunana, mnk3ys, zmb3ys, totalNfts][i];
+      if (pair[0]) pair[0].textContent = val;
+      if (pair[1]) pair[1].textContent = val;
+    });
+    holdingsPanels.forEach(function (panel) {
+      panel.classList.remove('holdings--hidden');
+      panel.classList.add('holdings--visible');
+    });
+  }
+
+  function hideHoldings() {
+    holdingsPanels.forEach(function (panel) {
+      panel.classList.add('holdings--hidden');
+      panel.classList.remove('holdings--visible');
+    });
+  }
+
+  function setVerifyLoading(loading) {
+    var btns = document.querySelectorAll('#btn-verify, #btn-verify-panel');
+    btns.forEach(function (btn) {
+      if (!btn) return;
+      btn.disabled = loading;
+      btn.textContent = loading ? 'Checking…' : 'Verify';
+    });
+  }
+
+  function fetchVerifyHoldings(walletAddress) {
+    var url = window.location.origin + '/api/verify?wallet=' + encodeURIComponent(walletAddress);
+    return fetch(url, { credentials: 'include' })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (data) {
+        if (data) return data;
+        if (HOLDINGS_ENDPOINT) {
+          var portalUrl = HOLDINGS_ENDPOINT + (HOLDINGS_ENDPOINT.indexOf('?') >= 0 ? '&' : '?') + 'wallet=' + encodeURIComponent(walletAddress);
+          return fetch(portalUrl, { method: 'GET', credentials: 'include' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+              if (!d) return null;
+              return {
+                blunanaFormatted: d.token != null ? String(d.token) : '0',
+                mnk3ysCount: 0,
+                zmb3ysCount: 0,
+                totalNfts: d.nfts != null ? d.nfts : 0,
+              };
+            });
+        }
+        return null;
+      });
+  }
+
+  function onVerify() {
+    var wallet = getWalletPublicKey();
+    if (!wallet) {
+      alert('Connect your wallet first, then click Verify to check your NFT and token holdings.');
+      return;
+    }
+
+    setVerifyLoading(true);
+
+    function done(data) {
+      setVerifyLoading(false);
+      showHoldings(data || {});
+    }
+
+    function fail(err) {
+      setVerifyLoading(false);
+      console.warn('Verify failed', err);
+      showHoldings({});
+      alert('Could not load holdings. Check console or try again.');
+    }
+
+    fetchVerifyHoldings(wallet).then(done).catch(fail);
+  }
+
+  document.getElementById('btn-verify')?.addEventListener('click', onVerify);
+  document.getElementById('btn-verify-mobile')?.addEventListener('click', function () {
+    openMobilePanel();
+    onVerify();
+  });
+  document.getElementById('btn-verify-panel')?.addEventListener('click', onVerify);
+  document.getElementById('hero-verify-cta')?.addEventListener('click', function () {
+    if (window.innerWidth < 900) openMobilePanel();
+    onVerify();
+  });
+
+  // ----- Discord login -----
+  var discordUser = null;
+
+  function getDiscordAuthUrl() {
+    if (CONFIG.discordConnectUrl && (CONFIG.discordConnectUrl.startsWith('http://') || CONFIG.discordConnectUrl.startsWith('https://'))) {
+      return CONFIG.discordConnectUrl;
+    }
+    return window.location.origin + '/api/discord/auth';
+  }
+
+  function setDiscordUI(connected, username) {
+    document.body.classList.toggle('discord-connected', !!connected);
+    discordUser = connected ? (username || null) : null;
+    var label = connected ? 'Log out' + (username ? ' (' + username + ')' : '') : 'Connect Discord';
+    document.querySelectorAll('#btn-connect-discord, #btn-connect-discord-mobile').forEach(function (btn) {
+      if (!btn) return;
+      btn.textContent = label;
+      btn.title = connected ? 'Disconnect Discord' : 'Sign in with Discord';
+      btn.dataset.discordConnected = connected ? '1' : '0';
+    });
+  }
+
+  function fetchDiscordMe() {
+    return fetch(window.location.origin + '/api/discord/me', { credentials: 'include' })
+      .then(function (res) {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then(function (data) {
+        if (data && data.connected && data.user) {
+          setDiscordUI(true, data.user.global_name || data.user.username);
+          return data.user;
+        }
+        setDiscordUI(false);
+        return null;
+      })
+      .catch(function () {
+        setDiscordUI(false);
+        return null;
+      });
+  }
+
+  function connectDiscord() {
+    if (document.body.classList.contains('discord-connected')) {
+      logoutDiscord();
+      return;
+    }
+    window.location.href = getDiscordAuthUrl();
+  }
+
+  function logoutDiscord() {
+    fetch(window.location.origin + '/api/discord/logout', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    })
+      .then(function () {
+        setDiscordUI(false);
+      })
+      .catch(function () {
+        setDiscordUI(false);
+      });
+  }
+
+  document.getElementById('btn-connect-discord')?.addEventListener('click', function (e) {
+    e.preventDefault();
+    if (document.body.classList.contains('discord-connected')) logoutDiscord();
+    else window.location.href = getDiscordAuthUrl();
+  });
+  document.getElementById('btn-connect-discord-mobile')?.addEventListener('click', function (e) {
+    e.preventDefault();
+    if (document.body.classList.contains('discord-connected')) logoutDiscord();
+    else window.location.href = getDiscordAuthUrl();
+  });
+
+  // On load: check Discord session and ?discord= query
+  fetchDiscordMe().then(function () {
+    var params = new URLSearchParams(window.location.search);
+    var discordParam = params.get('discord');
+    if (discordParam === 'connected' || discordParam === 'error') {
+      window.history.replaceState(null, '', window.location.pathname + window.location.hash || '');
+    }
+  });
+
+  // ----- Mobile panel -----
+  var mobilePanel = document.getElementById('mobile-panel');
+  var panelHandle = document.getElementById('panel-handle');
+
+  function openMobilePanel() {
+    if (window.innerWidth >= BREAKPOINT) return;
+    if (mobilePanel) {
+      mobilePanel.classList.remove('panel--hidden');
+      mobilePanel.setAttribute('aria-hidden', 'false');
+    }
+  }
+
+  function closeMobilePanel() {
+    if (mobilePanel) {
+      mobilePanel.classList.add('panel--hidden');
+      mobilePanel.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  document.getElementById('btn-verify-mobile')?.addEventListener('click', function (e) {
+    e.preventDefault();
+    openMobilePanel();
+  });
+
+  panelHandle?.addEventListener('click', function () {
+    if (mobilePanel?.classList.contains('panel--hidden')) openMobilePanel();
+    else closeMobilePanel();
+  });
+
+  // ----- Collections embeds (from /api/collections) -----
+  var grid = document.getElementById('collections-grid');
+  if (grid) {
+    fetch(window.location.origin + '/api/collections', { credentials: 'include' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data || !data.collections || !data.collections.length) return;
+        grid.innerHTML = '';
+        data.collections.forEach(function (c) {
+          var card = document.createElement('div');
+          card.className = 'card card--nft card--embed';
+          var mediaHtml = '';
+          var mediaSrc = c.animationUrl || c.image;
+          if (mediaSrc) {
+            var isGif = /\.gif(\?|$)/i.test(mediaSrc) || (c.animationUrl && !c.image);
+            if (isGif || c.animationUrl) {
+              mediaHtml = '<div class="embed__media embed__media--video"><img src="' + escapeHtml(mediaSrc) + '" alt="" loading="lazy" /></div>';
+            } else {
+              mediaHtml = '<div class="embed__media"><img src="' + escapeHtml(mediaSrc) + '" alt="" loading="lazy" /></div>';
+            }
+          } else {
+            mediaHtml = '<div class="embed__media embed__media--placeholder" aria-hidden="true"></div>';
+          }
+          var desc = (c.description || '').slice(0, 280);
+          if ((c.description || '').length > 280) desc += '…';
+          var stats = [];
+          // Hide obviously wrong supply values (like 1) until upstream APIs return real totals
+          if (c.supply != null && Number(c.supply) > 1) stats.push({ label: 'Supply', value: formatNum(c.supply) });
+          if (c.listedCount != null) stats.push({ label: 'Listed', value: formatNum(c.listedCount) });
+          if (c.floorPriceSol != null) stats.push({ label: 'Floor', value: c.floorPriceSol + ' SOL' });
+          if (c.volumeAllSol != null) stats.push({ label: 'Volume', value: c.volumeAllSol + ' SOL' });
+          if (c.avgPrice24hrSol != null) stats.push({ label: '24h avg', value: c.avgPrice24hrSol + ' SOL' });
+          var statsHtml = stats.length ? '<div class="embed__stats">' + stats.map(function (s) {
+            return '<div class="embed__stat"><span class="embed__stat-label">' + escapeHtml(s.label) + '</span><span class="embed__stat-value">' + escapeHtml(s.value) + '</span></div>';
+          }).join('') + '</div>' : '';
+          var meUrl = c.marketplaceUrl || ('https://magiceden.io/marketplace/' + encodeURIComponent(c.symbol || ''));
+          var tensorUrl = c.tensorUrl || ('https://www.tensor.trade/trade/' + encodeURIComponent(c.symbol || ''));
+          card.innerHTML =
+            mediaHtml +
+            '<div class="embed__body">' +
+              '<h3 class="card__title">' + escapeHtml(c.name || c.symbol) + '</h3>' +
+              (desc ? '<p class="card__text">' + escapeHtml(desc) + '</p>' : '') +
+              statsHtml +
+              '<div class="collections__actions">' +
+                '<a href="' + escapeHtml(meUrl) + '" class="collections__btn" target="_blank" rel="noopener" aria-label="Trade on Magic Eden">' +
+                  '<img src="assets/magic-eden.png" alt="Magic Eden" class="collections__btn-img collections__btn-img--me" loading="lazy" />' +
+                '</a>' +
+                '<a href="' + escapeHtml(tensorUrl) + '" class="collections__btn" target="_blank" rel="noopener" aria-label="Trade on Tensor">' +
+                  '<img src="assets/tensor.png" alt="Tensor" class="collections__btn-img" loading="lazy" />' +
+                '</a>' +
+              '</div>' +
+            '</div>';
+          grid.appendChild(card);
+        });
+      })
+      .catch(function () {});
+  }
+
+  function escapeHtml(s) {
+    if (s == null) return '';
+    var div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+  function formatNum(n) {
+    if (n == null) return '—';
+    if (typeof n !== 'number') return String(n);
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return String(n);
+  }
+
+  // ----- Holders table (with live $ value from /api/prices) -----
+  var holdersTbody = document.getElementById('holders-tbody');
+  var holdersSortSelect = document.getElementById('holders-sort');
+  if (holdersTbody && holdersSortSelect) {
+    function formatUsd(n) {
+      if (n == null || isNaN(n)) return '—';
+      if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+      if (n >= 1e3) return '$' + (n / 1e3).toFixed(2) + 'K';
+      if (n >= 1) return '$' + n.toFixed(2);
+      if (n >= 0.01) return '$' + n.toFixed(2);
+      return '$' + n.toFixed(4);
+    }
+    function loadHolders(sort) {
+      sort = sort || 'total';
+      var table = document.getElementById('holders-table');
+      if (table) table.className = 'holders-table holders-table--sort-' + sort;
+      holdersTbody.innerHTML = '<tr><td colspan="7" class="holders-loading">Loading…</td></tr>';
+      Promise.all([
+        fetch(window.location.origin + '/api/holders?sort=' + encodeURIComponent(sort), { credentials: 'include' }).then(function (r) { return r.ok ? r.json() : null; }),
+        fetch(window.location.origin + '/api/prices', { credentials: 'include' }).then(function (r) { return r.ok ? r.json() : null; }),
+        fetch(window.location.origin + '/api/collections', { credentials: 'include' }).then(function (r) { return r.ok ? r.json() : null; }),
+      ]).then(function (arr) {
+        var data = arr[0];
+        var prices = arr[1] || {};
+        var collectionsData = arr[2];
+        var blunanaUsd = prices.blunanaUsd;
+        var solUsd = prices.solUsd;
+        var floorMnk3ysSol = null;
+        var floorZmb3ysSol = null;
+        if (collectionsData && collectionsData.collections && Array.isArray(collectionsData.collections)) {
+          collectionsData.collections.forEach(function (c) {
+            if (c.symbol === 'mnk3ys' && c.floorPriceSol != null) floorMnk3ysSol = parseFloat(String(c.floorPriceSol), 10);
+            if (c.symbol === 'zmb3ys' && c.floorPriceSol != null) floorZmb3ysSol = parseFloat(String(c.floorPriceSol), 10);
+          });
+        }
+        var solUsdNum = solUsd != null ? Number(solUsd) : null;
+        var blunanaUsdNum = blunanaUsd != null ? Number(blunanaUsd) : null;
+        if (!data || !data.holders) {
+          holdersTbody.innerHTML = '<tr><td colspan="7" class="holders-empty">No data</td></tr>';
+          return;
+        }
+        var rows = data.holders.map(function (h, i) {
+          var walletShort = h.wallet.length > 12 ? h.wallet.slice(0, 4) + '…' + h.wallet.slice(-4) : h.wallet;
+          var walletLink = 'https://solscan.io/account/' + encodeURIComponent(h.wallet);
+          var tokenBal = h.tokenBalance != null ? Number(h.tokenBalance) : null;
+          var mnk3ysCount = Number(h.mnk3ysCount) || 0;
+          var zmb3ysCount = Number(h.zmb3ysCount) || 0;
+          var tokenValueUsd = (blunanaUsdNum != null && !isNaN(blunanaUsdNum) && tokenBal != null && !isNaN(tokenBal)) ? tokenBal * blunanaUsdNum : null;
+          var nftValueMnk3ys = (solUsdNum != null && !isNaN(solUsdNum) && floorMnk3ysSol != null && !isNaN(floorMnk3ysSol)) ? mnk3ysCount * floorMnk3ysSol * solUsdNum : null;
+          var nftValueZmb3ys = (solUsdNum != null && !isNaN(solUsdNum) && floorZmb3ysSol != null && !isNaN(floorZmb3ysSol)) ? zmb3ysCount * floorZmb3ysSol * solUsdNum : null;
+          var nftValueUsd = null;
+          if (solUsdNum != null && !isNaN(solUsdNum) && (floorMnk3ysSol != null || floorZmb3ysSol != null)) {
+            var nftSol = mnk3ysCount * (floorMnk3ysSol || 0) + zmb3ysCount * (floorZmb3ysSol || 0);
+            nftValueUsd = nftSol * solUsdNum;
+          }
+          var valueUsd = null;
+          if (sort === 'total') {
+            valueUsd = (tokenValueUsd != null ? tokenValueUsd : 0) + (nftValueUsd != null ? nftValueUsd : 0);
+            if (tokenValueUsd == null && nftValueUsd == null) valueUsd = null;
+          } else if (sort === 'token') valueUsd = tokenValueUsd;
+          else if (sort === 'mnk3ys') valueUsd = nftValueMnk3ys;
+          else if (sort === 'zmb3ys') valueUsd = nftValueZmb3ys;
+          else if (sort === 'nfts') valueUsd = nftValueUsd;
+          var valueCell = valueUsd != null ? formatUsd(valueUsd) : '—';
+          return '<tr>' +
+            '<td>' + (i + 1) + '</td>' +
+            '<td><a href="' + escapeHtml(walletLink) + '" target="_blank" rel="noopener" class="holders-wallet">' + escapeHtml(walletShort) + '</a></td>' +
+            '<td data-col="token">' + escapeHtml(h.tokenBalanceFormatted || '0') + '</td>' +
+            '<td data-col="mnk3ys">' + (h.mnk3ysCount || 0) + '</td>' +
+            '<td data-col="zmb3ys">' + (h.zmb3ysCount || 0) + '</td>' +
+            '<td data-col="nfts">' + (h.totalNfts || 0) + '</td>' +
+            '<td>' + escapeHtml(valueCell) + '</td>' +
+            '</tr>';
+        });
+        holdersTbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="7" class="holders-empty">No holders</td></tr>';
+      }).catch(function () {
+        holdersTbody.innerHTML = '<tr><td colspan="7" class="holders-empty">Failed to load</td></tr>';
+      });
+    }
+    loadHolders('total');
+    holdersSortSelect.addEventListener('change', function () {
+      loadHolders(holdersSortSelect.value);
+    });
+  }
+
+  // ----- Tokenomics: DEXTools-style price + metrics + 15m chart -----
+  var priceUsdEl = document.getElementById('tokenomics-price-usd');
+  var change24El = document.getElementById('tokenomics-change-24h');
+  var priceSolEl = document.getElementById('tokenomics-price-sol');
+  var mcapEl = document.getElementById('tokenomics-mcap');
+  var liqEl = document.getElementById('tokenomics-liq');
+  var volEl = document.getElementById('tokenomics-vol');
+  var chartEl = document.getElementById('blunana-chart');
+  var chartHintEl = document.getElementById('blunana-chart-hint');
+
+  function formatUsd(val) {
+    if (val == null || isNaN(val)) return '—';
+    if (val >= 1e9) return '$' + (val / 1e9).toFixed(2) + 'B';
+    if (val >= 1e6) return '$' + (val / 1e6).toFixed(2) + 'M';
+    if (val >= 1e3) return '$' + (val / 1e3).toFixed(2) + 'K';
+    if (val >= 1) return '$' + val.toFixed(2);
+    if (val >= 0.01) return '$' + val.toFixed(4);
+    return val < 0.0001 ? '$' + val.toExponential(2) : '$' + val.toFixed(6);
+  }
+
+  function formatPrice(val) {
+    if (val == null || isNaN(val)) return '—';
+    if (val >= 1) return val.toFixed(2);
+    if (val >= 0.01) return val.toFixed(4);
+    return val < 0.0001 ? val.toExponential(2) : val.toFixed(6);
+  }
+
+  if (priceUsdEl || priceSolEl) {
+    fetch(window.location.origin + '/api/prices', { credentials: 'include' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (p) {
+        if (!p) return;
+        if (priceUsdEl && p.blunanaUsd != null) priceUsdEl.textContent = '$' + formatPrice(p.blunanaUsd);
+        if (priceSolEl && p.blunanaPerSol != null) priceSolEl.textContent = formatPrice(p.blunanaPerSol) + ' SOL';
+        if (change24El && p.priceChange24h != null) {
+          var pc = p.priceChange24h;
+          change24El.textContent = (pc >= 0 ? '+' : '') + pc.toFixed(2) + '% 24H';
+          change24El.classList.remove('tokenomics__change--pos', 'tokenomics__change--neg');
+          change24El.classList.add(pc >= 0 ? 'tokenomics__change--pos' : 'tokenomics__change--neg');
+        }
+        if (mcapEl) mcapEl.textContent = p.marketCapUsd != null ? formatUsd(p.marketCapUsd) : '—';
+        if (liqEl) liqEl.textContent = p.liquidityUsd != null ? formatUsd(p.liquidityUsd) : '—';
+        if (volEl) volEl.textContent = p.volume24hUsd != null ? formatUsd(p.volume24hUsd) : '—';
+      });
+  }
+
+  if (chartEl) {
+    fetch(window.location.origin + '/api/blunana-ohlc?type=15m', { credentials: 'include' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        var items = (data && data.data && data.data.items) ? data.data.items : [];
+        if (chartHintEl) chartHintEl.textContent = data && data.message ? data.message : '';
+        if (items.length === 0) {
+          if (chartHintEl && !chartHintEl.textContent) chartHintEl.textContent = 'Add BIRDEYE_API_KEY in server .env to show 15m chart.';
+          return;
+        }
+        var candlestickData = items.map(function (c) {
+          return {
+            time: c.unix_time,
+            open: c.o,
+            high: c.h,
+            low: c.l,
+            close: c.c,
+          };
+        }).sort(function (a, b) { return a.time - b.time; });
+        if (typeof window.LightweightCharts === 'undefined') return;
+        var chart = window.LightweightCharts.createChart(chartEl, {
+          layout: { background: { color: 'transparent' }, textColor: '#8b8f9a' },
+          grid: { vertLines: { color: '#2a2d38' }, horzLines: { color: '#2a2d38' } },
+          width: chartEl.clientWidth,
+          height: 280,
+          timeScale: { borderColor: '#2a2d38', timeVisible: true, secondsVisible: false },
+          rightPriceScale: { borderColor: '#2a2d38', scaleMargins: { top: 0.1, bottom: 0.2 } },
+        });
+        var candleSeries = chart.addCandlestickSeries({
+          upColor: '#14f195',
+          downColor: '#f87171',
+          borderDownColor: '#f87171',
+          borderUpColor: '#14f195',
+        });
+        candleSeries.setData(candlestickData);
+        chart.timeScale().fitContent();
+        window.addEventListener('resize', function () {
+          chart.applyOptions({ width: chartEl.clientWidth });
+        });
+      });
+  }
+})();
