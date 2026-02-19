@@ -53,8 +53,9 @@ app.use(
     keys: [SESSION_SECRET],
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: false,
     sameSite: 'lax',
+    path: '/',
   })
 );
 
@@ -79,7 +80,8 @@ app.get('/api/discord/auth', function (req, res) {
     scope: SCOPES,
     state: state,
   });
-  res.redirect(DISCORD_AUTH_URL + '?' + qs.toString());
+  res.setHeader('Cache-Control', 'no-store');
+  res.redirect(302, DISCORD_AUTH_URL + '?' + qs.toString());
 });
 
 // ——— Discord OAuth: callback ———
@@ -134,7 +136,8 @@ app.get('/api/discord/callback', async function (req, res) {
       avatar: user.avatar,
       global_name: user.global_name || user.username,
     };
-    return res.redirect('/?discord=connected');
+    res.setHeader('Cache-Control', 'no-store');
+    return res.redirect(302, '/?discord=connected');
   } catch (err) {
     console.warn('Discord callback error', err.message);
     return res.redirect('/?discord=error');

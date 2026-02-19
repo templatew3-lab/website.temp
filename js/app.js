@@ -463,17 +463,28 @@
   });
 
   // On load: check Discord session and ?discord= query; reopen verify modal when returning from Discord
-  fetchDiscordMe().then(function () {
+  (function onLoadDiscordAndModal() {
     var params = new URLSearchParams(window.location.search);
     var discordParam = params.get('discord');
     if (discordParam === 'connected') {
       openVerifyModal();
     }
-    if (discordParam === 'connected' || discordParam === 'error') {
-      var cleanUrl = window.location.pathname + (window.location.hash || '') || '/';
-      window.history.replaceState(null, '', cleanUrl);
+    function done() {
+      if (discordParam === 'connected' || discordParam === 'error') {
+        var cleanUrl = window.location.pathname + (window.location.hash || '') || '/';
+        window.history.replaceState(null, '', cleanUrl);
+      }
     }
-  });
+    fetchDiscordMe().then(function (user) {
+      if (discordParam === 'connected' && !user) {
+        setTimeout(function () {
+          fetchDiscordMe().then(done);
+        }, 600);
+        return;
+      }
+      done();
+    }).catch(done);
+  })();
 
   // ----- Mobile panel -----
   var mobilePanel = document.getElementById('mobile-panel');
