@@ -180,6 +180,13 @@ app.get('/api/discord/user/:id', async function (req, res) {
       validateStatus: () => true,
     });
     if (userRes.status !== 200 || !userRes.data.id) {
+      if (userRes.status === 401) {
+        console.warn('Discord API 401 for user ' + id + ' — check DISCORD_BOT_TOKEN is correct and has no extra spaces/quotes.');
+      } else if (userRes.status === 404) {
+        console.warn('Discord API 404 for user ' + id + ' — user ID may be wrong or bot cannot see this user.');
+      } else {
+        console.warn('Discord API returned ' + userRes.status + ' for user ' + id);
+      }
       return res.status(404).json({ error: 'User not found' });
     }
     const u = userRes.data;
