@@ -8,7 +8,7 @@
 require('dotenv').config();
 const path = require('path');
 const express = require('express');
-const session = require('express-session');
+const cookieSession = require('cookie-session');
 const cookieParser = require('cookie-parser');
 const axios = require('axios');
 const bs58 = require('bs58');
@@ -48,16 +48,13 @@ if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET) {
 
 app.use(cookieParser());
 app.use(
-  session({
-    secret: SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      sameSite: 'lax',
-    },
+  cookieSession({
+    name: 'mnk3ys_session',
+    keys: [SESSION_SECRET],
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
   })
 );
 
@@ -146,7 +143,8 @@ app.get('/api/discord/callback', async function (req, res) {
 
 // ——— Current Discord user ———
 app.get('/api/discord/me', function (req, res) {
-  if (!req.session.discord) {
+  res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate');
+  if (!req.session || !req.session.discord) {
     return res.json({ connected: false });
   }
   res.json({ connected: true, user: req.session.discord });
@@ -154,18 +152,13 @@ app.get('/api/discord/me', function (req, res) {
 
 // ——— Logout ———
 app.post('/api/discord/logout', function (req, res) {
-  req.session.discord = null;
-  req.session.save(function (err) {
-    if (err) return res.status(500).json({ ok: false });
-    res.json({ ok: true });
-  });
+  delete req.session.discord;
+  res.json({ ok: true });
 });
 
 app.get('/api/discord/logout', function (req, res) {
-  req.session.discord = null;
-  req.session.save(function (err) {
-    res.redirect('/');
-  });
+  delete req.session.discord;
+  res.redirect('/');
 });
 
 // ——— Live prices (Jupiter): SOL + Blunana USD; cache 60s ———
