@@ -164,6 +164,36 @@ app.get('/api/discord/logout', function (req, res) {
   res.redirect('/');
 });
 
+// ——— Discord user by ID (for team section; requires bot token) ———
+const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+app.get('/api/discord/user/:id', async function (req, res) {
+  const id = req.params.id;
+  if (!id || !DISCORD_BOT_TOKEN) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  try {
+    const userRes = await axios.get('https://discord.com/api/v10/users/' + encodeURIComponent(id), {
+      headers: { Authorization: 'Bot ' + DISCORD_BOT_TOKEN },
+      validateStatus: () => true,
+    });
+    if (userRes.status !== 200 || !userRes.data.id) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const u = userRes.data;
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.json({
+      id: u.id,
+      username: u.username,
+      global_name: u.global_name || u.username,
+      avatar: u.avatar,
+      discriminator: u.discriminator,
+    });
+  } catch (err) {
+    console.warn('Discord user fetch error', err.message);
+    res.status(500).json({ error: 'Failed to fetch' });
+  }
+});
+
 // ——— Live prices (Jupiter): SOL + Blunana USD; cache 60s ———
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
 let pricesCache = { data: null, ts: 0 };

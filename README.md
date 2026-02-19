@@ -46,8 +46,19 @@ NFT + Token site with wallet connect and **Discord login**.
    - `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` (if using Discord login).
    - `HELIUS_API_KEY`, `BLUNA_TOKEN_MINT`, `MNK3YS_COLLECTION_MINT`, `ZMB3YS_COLLECTION_MINT` (for collections/holders/verify).
    - `BIRDEYE_API_KEY` (optional, for BLUNANA 15m chart).
+   - `DISCORD_BOT_TOKEN` (optional, for **Team** section: fetches Discord username and avatar by ID). Create a Bot in your Discord app, copy token.
 6. In Discord Developer Portal, add the production redirect: `https://<your-vercel-url>/api/discord/callback`.
 7. Deploy. The app runs at **/** (static from root + serverless `/api/*`). `/Mnk3ys` and `/Mnk3ys/` redirect to `/`.
+
+## Team section
+
+Edit `js/config.js` and set `team` to an array of objects:
+
+- **xProfileUrl** — X (Twitter) profile URL (e.g. `https://x.com/username`). Used for the link and to show the handle (e.g. @username).
+- **discordId** — Discord user ID (numeric string). The site fetches username and avatar from Discord (requires `DISCORD_BOT_TOKEN` in env).
+- **description** — Short role or bio (plain text).
+
+Example: `team: [ { xProfileUrl: 'https://x.com/jane', discordId: '123456789012345678', description: 'Lead dev' } ]`
 
 ## Run without backend (static only)
 

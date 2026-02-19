@@ -1335,6 +1335,20 @@ body {
   background: var(--bg-elevated);
   margin-bottom: 0.75rem;
 }
+.card__avatar-wrap {
+  margin-bottom: 0.75rem;
+}
+.card__avatar--img {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+.card__meta--handle .link {
+  font-size: 0.875rem;
+  color: var(--accent);
+}
 
 /* Holders table */
 .holders-toolbar {

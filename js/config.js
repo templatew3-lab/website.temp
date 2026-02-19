@@ -24,4 +24,9 @@ window.MNK3YS_CONFIG = {
     mnk3ys: 'https://magiceden.io/marketplace/mnk3ys',
     zmb3ys: 'https://magiceden.io/marketplace/zmb3ys',
   },
+
+  // Team: one object per member. Discord ID is used to fetch username and avatar. X profile URL is used for link and handle.
+  team: [
+    // { xProfileUrl: 'https://x.com/username', discordId: '123456789012345678', description: 'Role or short bio' },
+  ],
 };
