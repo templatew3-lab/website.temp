@@ -304,7 +304,6 @@
 
   function openVerifyModal() {
     if (!verifyModal) return;
-    if (window.innerWidth < BREAKPOINT) openMobilePanel();
     verifyModal.setAttribute('aria-hidden', 'false');
     syncVerifyModalState();
   }
@@ -375,11 +374,10 @@
   }
 
   document.getElementById('btn-verify')?.addEventListener('click', openVerifyModal);
-  document.getElementById('btn-verify-mobile')?.addEventListener('click', function () {
-    openMobilePanel();
+  document.getElementById('btn-verify-panel')?.addEventListener('click', function () {
+    closeMobilePanel();
     openVerifyModal();
   });
-  document.getElementById('btn-verify-panel')?.addEventListener('click', openVerifyModal);
   document.getElementById('hero-verify-cta')?.addEventListener('click', function () {
     if (window.innerWidth < 900) openMobilePanel();
     openVerifyModal();
@@ -571,14 +569,19 @@
     }
   }
 
-  document.getElementById('btn-verify-mobile')?.addEventListener('click', function (e) {
-    e.preventDefault();
-    openMobilePanel();
-  });
-
   panelHandle?.addEventListener('click', function () {
     if (mobilePanel?.classList.contains('panel--hidden')) openMobilePanel();
     else closeMobilePanel();
+  });
+
+  document.getElementById('btn-more-mobile')?.addEventListener('click', function () {
+    if (mobilePanel?.classList.contains('panel--hidden')) openMobilePanel();
+    else closeMobilePanel();
+  });
+
+  // Close panel when a "more" menu link is clicked (section nav still handled by [data-section] links)
+  mobilePanel?.querySelectorAll('.panel__link').forEach(function (link) {
+    link.addEventListener('click', closeMobilePanel);
   });
 
   // ----- Collections embeds (from /api/collections) -----

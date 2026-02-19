@@ -569,15 +569,24 @@ body {
 }
 .panel__nav {
   display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border);
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 .panel__link {
   color: var(--accent);
   text-decoration: none;
   font-weight: 500;
+  padding: 0.35rem 0;
+}
+.panel__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.panel__actions .btn + .btn,
+.panel__actions .dashboard__discord-wrap {
+  margin-top: 0;
 }
 .panel .btn + .btn {
   margin-top: 0.5rem;
