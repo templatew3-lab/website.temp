@@ -369,6 +369,57 @@ body {
   margin-top: 0.5rem;
 }
 
+.dashboard__discord-wrap {
+  margin-top: 0.5rem;
+}
+.dashboard__discord-connected {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.dashboard__discord-connected[hidden] {
+  display: none;
+}
+.dashboard__discord-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.dashboard__discord-username {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dashboard__discord-logout {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+.dashboard__discord-logout:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
 .dashboard--bottom {
   display: flex;
   position: fixed;

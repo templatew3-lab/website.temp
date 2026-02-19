@@ -44,9 +44,16 @@
       <button type="button" class="btn btn--outline btn--full btn-connect" id="btn-connect-wallet" aria-label="Connect wallet">
         Connect wallet
       </button>
-      <button type="button" class="btn btn--outline btn--full btn-connect" id="btn-connect-discord" aria-label="Connect Discord">
-        Connect Discord
-      </button>
+      <div class="dashboard__discord-wrap">
+        <button type="button" class="btn btn--outline btn--full btn-connect" id="btn-connect-discord" aria-label="Connect Discord">
+          Connect Discord
+        </button>
+        <div class="dashboard__discord-connected" id="discord-connected-sidebar" hidden>
+          <img class="dashboard__discord-avatar" id="discord-avatar-sidebar" src="" alt="" width="28" height="28" />
+          <span class="dashboard__discord-username" id="discord-username-sidebar"></span>
+          <button type="button" class="dashboard__discord-logout" id="btn-discord-logout-sidebar" aria-label="Log out" title="Log out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+        </div>
+      </div>
       <div class="holdings holdings--hidden" id="holdings-panel">
         <p class="holdings__label">Your holdings</p>
         <div class="holdings__row">
@@ -112,7 +119,14 @@
       <h3 class="panel__title">Dashboard</h3>
       <button type="button" class="btn btn--primary btn--full" id="btn-verify-panel">Verify holdings</button>
       <button type="button" class="btn btn--outline btn--full" id="btn-connect-wallet-mobile">Connect wallet</button>
-      <button type="button" class="btn btn--outline btn--full" id="btn-connect-discord-mobile">Connect Discord</button>
+      <div class="dashboard__discord-wrap dashboard__discord-wrap--panel">
+        <button type="button" class="btn btn--outline btn--full" id="btn-connect-discord-mobile">Connect Discord</button>
+        <div class="dashboard__discord-connected" id="discord-connected-mobile" hidden>
+          <img class="dashboard__discord-avatar" id="discord-avatar-mobile" src="" alt="" width="28" height="28" />
+          <span class="dashboard__discord-username" id="discord-username-mobile"></span>
+          <button type="button" class="dashboard__discord-logout" id="btn-discord-logout-mobile" aria-label="Log out" title="Log out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+        </div>
+      </div>
       <div class="holdings holdings--hidden" id="holdings-panel-mobile">
         <p class="holdings__label">Your holdings</p>
         <div class="holdings__row">

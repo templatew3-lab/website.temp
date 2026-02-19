@@ -362,13 +362,42 @@
       discordUser = null;
     }
     var name = discordUser && (discordUser.global_name || discordUser.username);
-    var label = connected ? 'Log out' + (name ? ' (' + name + ')' : '') : 'Connect Discord';
-    document.querySelectorAll('#btn-connect-discord, #btn-connect-discord-mobile').forEach(function (btn) {
-      if (!btn) return;
-      btn.textContent = label;
-      btn.title = connected ? 'Disconnect Discord' : 'Sign in with Discord';
-      btn.dataset.discordConnected = connected ? '1' : '0';
-    });
+    var btnSidebar = document.getElementById('btn-connect-discord');
+    var btnMobile = document.getElementById('btn-connect-discord-mobile');
+    var wrapSidebar = document.getElementById('discord-connected-sidebar');
+    var wrapMobile = document.getElementById('discord-connected-mobile');
+    if (btnSidebar) {
+      btnSidebar.hidden = !!connected;
+      btnSidebar.textContent = 'Connect Discord';
+      btnSidebar.title = 'Sign in with Discord';
+      btnSidebar.dataset.discordConnected = connected ? '1' : '0';
+    }
+    if (btnMobile) {
+      btnMobile.hidden = !!connected;
+      btnMobile.textContent = 'Connect Discord';
+      btnMobile.title = 'Sign in with Discord';
+      btnMobile.dataset.discordConnected = connected ? '1' : '0';
+    }
+    if (wrapSidebar) {
+      wrapSidebar.hidden = !connected;
+      if (connected && discordUser) {
+        var avSidebar = document.getElementById('discord-avatar-sidebar');
+        var nameSidebar = document.getElementById('discord-username-sidebar');
+        if (avSidebar) avSidebar.src = getDiscordAvatarUrl(discordUser);
+        if (avSidebar) avSidebar.alt = name || 'Discord';
+        if (nameSidebar) nameSidebar.textContent = name || 'Connected';
+      }
+    }
+    if (wrapMobile) {
+      wrapMobile.hidden = !connected;
+      if (connected && discordUser) {
+        var avMobile = document.getElementById('discord-avatar-mobile');
+        var nameMobile = document.getElementById('discord-username-mobile');
+        if (avMobile) avMobile.src = getDiscordAvatarUrl(discordUser);
+        if (avMobile) avMobile.alt = name || 'Discord';
+        if (nameMobile) nameMobile.textContent = name || 'Connected';
+      }
+    }
     syncVerifyModalState();
   }
 
@@ -424,13 +453,25 @@
     if (document.body.classList.contains('discord-connected')) logoutDiscord();
     else window.location.href = getDiscordAuthUrl();
   });
+  document.getElementById('btn-discord-logout-sidebar')?.addEventListener('click', function (e) {
+    e.preventDefault();
+    logoutDiscord();
+  });
+  document.getElementById('btn-discord-logout-mobile')?.addEventListener('click', function (e) {
+    e.preventDefault();
+    logoutDiscord();
+  });
 
-  // On load: check Discord session and ?discord= query
+  // On load: check Discord session and ?discord= query; reopen verify modal when returning from Discord
   fetchDiscordMe().then(function () {
     var params = new URLSearchParams(window.location.search);
     var discordParam = params.get('discord');
+    if (discordParam === 'connected') {
+      openVerifyModal();
+    }
     if (discordParam === 'connected' || discordParam === 'error') {
-      window.history.replaceState(null, '', window.location.pathname + window.location.hash || '');
+      var cleanUrl = window.location.pathname + (window.location.hash || '') || '/';
+      window.history.replaceState(null, '', cleanUrl);
     }
   });
 
