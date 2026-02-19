@@ -44,7 +44,8 @@ module.exports = (req, res) => {
   }
   const q = (req.url || '').includes('?') ? '?' + (req.url || '').split('?').slice(1).join('?') : '';
 
-  if (raw.startsWith('/api/') && raw.length > 5 && !raw.startsWith('/api/Mnk3ys')) {
+  const isApiRoute = /^\/api\/(discord|verify|collections|holders|prices|blunana-ohlc)(\/|$|\?)/.test(raw);
+  if (isApiRoute) {
     req.url = raw + q;
     return app(req, res);
   }
@@ -59,19 +60,22 @@ module.exports = (req, res) => {
   if (u === '/favicon.ico') return res.status(204).end();
 
   const isRoot = u === '' || u === '/' || u === '/index.html';
-  const filePath = isRoot ? path.join(ROOT, 'index.html') : path.resolve(ROOT, u.replace(/^\/+/, ''));
-  if (!isRoot && !filePath.startsWith(ROOT)) return res.status(404).end();
+  const rel = (u || '').replace(/^\/+/, '') || 'index.html';
+  const filePath = path.join(ROOT, isRoot ? 'index.html' : rel);
+  const resolvedPath = path.resolve(filePath);
+  if (!resolvedPath.startsWith(path.resolve(ROOT))) return res.status(404).end();
   const ext = path.extname(isRoot ? 'index.html' : u);
   if (isRoot || u.startsWith('/css/') || u.startsWith('/js/') || u.startsWith('/assets/')) {
     try {
       const body = ['.css', '.js', '.json', '.html'].includes(ext)
-        ? fs.readFileSync(filePath, 'utf8')
-        : fs.readFileSync(filePath);
+        ? fs.readFileSync(resolvedPath, 'utf8')
+        : fs.readFileSync(resolvedPath);
       res.setHeader('Content-Type', isRoot ? 'text/html; charset=utf-8' : (MIME[ext] || 'application/octet-stream'));
       return res.status(200).send(body);
     } catch (e) {
       if (isRoot) return res.status(500).send('index not found');
-      return res.status(404).end();
+      res.setHeader('Content-Type', 'text/plain');
+      return res.status(404).send('Not Found');
     }
   }
 
