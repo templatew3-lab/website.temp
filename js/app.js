@@ -76,13 +76,27 @@
   setActiveSection(getSectionIdFromHash());
 
   // ----- Wallet (Solana) -----
+  function getDetectedWallets() {
+    var list = [];
+    if (window.phantom?.solana?.isPhantom) {
+      list.push({ name: 'Phantom', provider: window.phantom.solana });
+    }
+    if (window.solflare?.isSolflare) {
+      list.push({ name: 'Solflare', provider: window.solflare });
+    }
+    if (window.solana && !list.some(function (w) { return w.provider === window.solana; })) {
+      var label = window.solana.isPhantom ? 'Phantom' : window.solana.isSolflare ? 'Solflare' : 'Solana';
+      list.push({ name: label, provider: window.solana });
+    }
+    return list;
+  }
+
   function getSolanaProvider() {
-    // Prefer explicit providers
-    if (window.phantom?.solana?.isPhantom) return window.phantom.solana;
-    if (window.solflare?.isSolflare) return window.solflare;
-    // Fallback to generic window.solana
-    if (window.solana?.isPhantom || window.solana?.isSolflare) return window.solana;
-    return window.solana || window.phantom?.solana || window.solflare || null;
+    var wallets = getDetectedWallets();
+    var connected = wallets.filter(function (w) { return w.provider.publicKey; });
+    if (connected.length) return connected[0].provider;
+    if (wallets.length) return wallets[0].provider;
+    return null;
   }
 
   function getWalletPublicKey() {
@@ -103,12 +117,7 @@
     if (typeof syncVerifyModalState === 'function') syncVerifyModalState();
   }
 
-  function connectWallet() {
-    var provider = getSolanaProvider();
-    if (!provider) {
-      alert('No Solana wallet extension detected. Install or enable Phantom, Solflare, or another Solana wallet in this browser.');
-      return Promise.reject(new Error('No provider'));
-    }
+  function connectWithProvider(provider) {
     return provider.connect({ onlyIfTrusted: false })
       .then(function () {
         setWalletConnected(true);
@@ -120,19 +129,73 @@
       });
   }
 
+  var walletPicker = document.getElementById('wallet-picker');
+  var walletPickerBackdrop = document.getElementById('wallet-picker-backdrop');
+  var walletPickerClose = document.getElementById('wallet-picker-close');
+  var walletPickerList = document.getElementById('wallet-picker-list');
+
+  function openWalletPicker() {
+    if (!walletPicker || !walletPickerList) return;
+    var wallets = getDetectedWallets();
+    if (!wallets.length) {
+      alert('No Solana wallet extension detected. Install or enable Phantom, Solflare, or another Solana wallet in this browser.');
+      return Promise.reject(new Error('No provider'));
+    }
+    if (wallets.length === 1) {
+      return connectWithProvider(wallets[0].provider);
+    }
+    walletPickerList.innerHTML = '';
+    wallets.forEach(function (w) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'wallet-picker__btn';
+      btn.textContent = w.name;
+      btn.addEventListener('click', function () {
+        closeWalletPicker();
+        connectWithProvider(w.provider)
+          .then(function () {
+            if (walletPicker._resolve) walletPicker._resolve();
+            walletPicker._resolve = null;
+          })
+          .catch(function () {});
+      });
+      walletPickerList.appendChild(btn);
+    });
+    walletPicker.setAttribute('aria-hidden', 'false');
+    return new Promise(function (resolve) {
+      walletPicker._resolve = resolve;
+    });
+  }
+
+  function closeWalletPicker() {
+    if (walletPicker) walletPicker.setAttribute('aria-hidden', 'true');
+    if (walletPicker && walletPicker._resolve) {
+      walletPicker._resolve();
+      walletPicker._resolve = null;
+    }
+  }
+
+  function connectWallet() {
+    return openWalletPicker();
+  }
+
   (function initWalletListener() {
-    var provider = getSolanaProvider();
-    if (!provider || typeof provider.on !== 'function') return;
-    provider.on('accountChanged', function (pk) {
-      if (pk) setWalletConnected(true);
-      else setWalletConnected(false);
-      hideHoldings();
+    getDetectedWallets().forEach(function (w) {
+      if (w.provider && typeof w.provider.on === 'function') {
+        w.provider.on('accountChanged', function (pk) {
+          if (pk) setWalletConnected(true);
+          else setWalletConnected(false);
+          hideHoldings();
+        });
+      }
     });
     if (getWalletPublicKey()) setWalletConnected(true);
   })();
 
   document.getElementById('btn-connect-wallet')?.addEventListener('click', connectWallet);
   document.getElementById('btn-connect-wallet-mobile')?.addEventListener('click', connectWallet);
+  walletPickerBackdrop?.addEventListener('click', closeWalletPicker);
+  walletPickerClose?.addEventListener('click', closeWalletPicker);
 
   // ----- Holdings UI -----
   const holdingsPanels = document.querySelectorAll('.holdings');

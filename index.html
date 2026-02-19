@@ -196,6 +196,20 @@
     </div>
   </div>
 
+  <!-- Wallet picker: choose Phantom, Solflare, etc. -->
+  <div class="wallet-picker" id="wallet-picker" aria-hidden="true" role="dialog" aria-labelledby="wallet-picker-title" aria-modal="true">
+    <div class="wallet-picker__backdrop" id="wallet-picker-backdrop"></div>
+    <div class="wallet-picker__box">
+      <div class="wallet-picker__head">
+        <h2 class="wallet-picker__title" id="wallet-picker-title">Connect wallet</h2>
+        <button type="button" class="wallet-picker__close" id="wallet-picker-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="wallet-picker__list" id="wallet-picker-list">
+        <!-- Filled by js: detected wallets as buttons -->
+      </div>
+    </div>
+  </div>
+
   <main class="main" id="main">
     <div class="main__spacer main__spacer--side" aria-hidden="true"></div>
 
