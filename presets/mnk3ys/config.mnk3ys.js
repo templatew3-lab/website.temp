@@ -1,9 +1,7 @@
 /**
- * Project config — template for any NFT/token project.
- * Replace values below (or load a preset from presets/) for your project.
- * Mnk3ys preset is in presets/mnk3ys/ for reference/restore.
+ * Mnk3ys preset — full project config. Copy into js/config.js (merge into window.MNK3YS_CONFIG / project) to restore Mnk3ys site.
  */
-window.MNK3YS_CONFIG = {
+module.exports = {
   // ——— Brand ———
   projectName: 'MNK3YLABS',
   tagline: 'STRONGER TOGETHER',
@@ -14,10 +12,9 @@ window.MNK3YS_CONFIG = {
     x: 'https://x.com/mnk3ylabs',
     discord: 'https://discord.gg/sKeVmR3',
   },
-  // Optional: shop URL (if set, Shop link is shown in sidebar)
   shopUrl: 'https://mnk3ylabs.printify.me/',
 
-  // ——— Token ———
+  // ——— Token (project token) ———
   token: {
     name: 'Blunana',
     symbol: 'BLUNANA',
@@ -43,7 +40,7 @@ window.MNK3YS_CONFIG = {
   partnersLead: 'Platforms and tools integrated with MNK3YLABS.',
   partnersPlaceholder: 'Adding soon',
 
-  // ——— Holders (labels; keys match server collection slugs / token) ———
+  // ——— Holders (labels for token + collections; order must match server collections) ———
   holdingsLabels: {
     token: 'Blunana',
     mnk3ys: 'MNK3YS',
@@ -51,11 +48,9 @@ window.MNK3YS_CONFIG = {
     totalNfts: 'Total NFTs',
   },
   holdersLead: 'Top holders by Blunana token and NFT collections.',
-  holdersSortOptions: {
-    token: 'Blunana token',
-    mnk3ys: 'MNK3YS NFTs',
-    zmb3ys: 'ZMB3YS NFTs',
-  },
+  holdersSortToken: 'Blunana token',
+  holdersSortMnk3ys: 'MNK3YS NFTs',
+  holdersSortZmb3ys: 'ZMB3YS NFTs',
 
   // ——— Holder portal & API ———
   holderPortalUrl: '',
