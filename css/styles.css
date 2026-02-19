@@ -229,7 +229,7 @@ body {
     position: absolute;
     top: 10vh;
     right: 6vw;
-    transform: translate(150px, -300px) scale(1.2);
+    transform: translate(110px, -220px) scale(1.2); /* 40px left, 80px down from previous */
   }
 }
 
